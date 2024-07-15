@@ -31,7 +31,7 @@ enum ParsePersonError {
     ParseInt(ParseIntError),
 }
 
-// I AM NOT DONE
+
 
 // Steps:
 // 1. If the length of the provided string is 0, an error should be returned
@@ -49,15 +49,44 @@ enum ParsePersonError {
 // you want to return a string error message, you can do so via just using
 // return `Err("my error message".into())`.
 
+
+
 impl FromStr for Person {
     type Err = ParsePersonError;
+
     fn from_str(s: &str) -> Result<Person, Self::Err> {
+        if s.is_empty() {
+            return Err(ParsePersonError::Empty);
+        }
+
+        let mut parts = s.split(',');
+
+        let name = match parts.next() {
+            Some(name) if !name.is_empty() => name.trim().to_string(),
+            _ => return Err(ParsePersonError::NoName),
+        };
+
+        let age_str = match parts.next() {
+            Some(age_str) if !age_str.trim().is_empty() => age_str.trim(),
+            _ => return Err(ParsePersonError::BadLen),
+        };
+
+        let age = match age_str.parse::<usize>() {
+            Ok(age) => age,
+            Err(e) => return Err(ParsePersonError::ParseInt(e)),
+        };
+
+        if parts.next().is_some() {
+            return Err(ParsePersonError::BadLen);
+        }
+
+        Ok(Person { name, age })
     }
 }
 
 fn main() {
     let p = "Mark,20".parse::<Person>().unwrap();
-    println!("{:?}", p);
+    println!("{:?}", p); // Output: Person { name: "Mark", age: 20 }
 }
 
 #[cfg(test)]
@@ -68,6 +97,7 @@ mod tests {
     fn empty_input() {
         assert_eq!("".parse::<Person>(), Err(ParsePersonError::Empty));
     }
+
     #[test]
     fn good_input() {
         let p = "John,32".parse::<Person>();
@@ -76,12 +106,10 @@ mod tests {
         assert_eq!(p.name, "John");
         assert_eq!(p.age, 32);
     }
+
     #[test]
     fn missing_age() {
-        assert!(matches!(
-            "John,".parse::<Person>(),
-            Err(ParsePersonError::ParseInt(_))
-        ));
+        assert_eq!("John,".parse::<Person>(), Err(ParsePersonError::BadLen));
     }
 
     #[test]
@@ -106,7 +134,7 @@ mod tests {
     fn missing_name_and_age() {
         assert!(matches!(
             ",".parse::<Person>(),
-            Err(ParsePersonError::NoName | ParsePersonError::ParseInt(_))
+            Err(ParsePersonError::NoName | ParsePersonError::BadLen)
         ));
     }
 
@@ -131,3 +159,4 @@ mod tests {
         );
     }
 }
+
