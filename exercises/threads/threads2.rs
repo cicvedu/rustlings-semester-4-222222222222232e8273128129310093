@@ -9,7 +9,7 @@
 
 // I AM NOT DONE
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -24,6 +24,7 @@ fn main() {
         let status_shared = Arc::clone(&status);
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_millis(250));
+            let mut status = status_shared.lock().unwrap();
             // TODO: You must take an action before you update a shared value
             status_shared.jobs_completed += 1;
         });
@@ -34,6 +35,7 @@ fn main() {
         // TODO: Print the value of the JobStatus.jobs_completed. Did you notice
         // anything interesting in the output? Do you have to 'join' on all the
         // handles?
-        println!("jobs completed {}", ???);
+        let final_status = status.lock().unwrap();
+        println!("jobs completed {}", final_status.jobs_completed);
     }
 }
